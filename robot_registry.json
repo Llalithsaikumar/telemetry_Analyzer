@@ -1,0 +1,27 @@
+{
+    "1a2b": {
+        "name": "Bella Bot",
+        "manufacturer": "Pudu",
+        "registration_date": "2024-11-30 18:58:40.466668"
+    },
+    "3c4a": {
+        "name": "Ketty Bot",
+        "manufacturer": "Pudu",
+        "registration_date": "2024-11-30 18:58:40.514192"
+    },
+    "6epa": {
+        "name": "Pepper",
+        "manufacturer": "Aldebaran",
+        "registration_date": "2024-11-30 18:58:40.544971"
+    },
+    "n5v2": {
+        "name": "Nao",
+        "manufacturer": "Aldebaran",
+        "registration_date": "2024-11-30 18:58:40.572166"
+    },
+    "2d2b": {
+        "name": "Ikit Bot",
+        "manufacturer": "ikitbot",
+        "registration_date": "2024-11-30 18:58:40.601890"
+    }
+}
