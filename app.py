@@ -466,126 +466,121 @@ def register_routes(app, robot_registry, telemetry_buffer, risk_score_buffer, te
         Normalize different pose data formats into a standard format.
         Handles various input formats and structures.
         """
-
-        def extract_numeric_value(value):
-            """Extract numeric values from various formats"""
-            try:
-                if isinstance(value, (int, float)):
-                    return float(value)
-                elif isinstance(value, str):
-                    # Remove any non-numeric characters except decimal point and minus
-                    return float(''.join(c for c in value if c.isdigit() or c in '.-'))
-                return None
-            except (ValueError, TypeError):
-                return None
-
         def is_valid_pose(pose):
             """Check if a dictionary can be interpreted as a valid pose"""
             if isinstance(pose, dict):
+                # Check for exact keys first
+                if all(key in pose for key in ['px', 'py', 'theta']):
+                    return all(isinstance(pose[key], (int, float)) for key in ['px', 'py', 'theta'])
+                
                 # Try to find keys that might represent x, y, theta coordinates
-                possible_x = next((v for k, v in pose.items() if any(x in k.lower() for x in ['px', 'x', 'posx'])),
-                                  None)
-                possible_y = next((v for k, v in pose.items() if any(y in k.lower() for y in ['py', 'y', 'posy'])),
-                                  None)
-                possible_theta = next(
-                    (v for k, v in pose.items() if any(t in k.lower() for t in ['theta', 'angle', 'orientation'])),
-                    None)
-
-                return all(extract_numeric_value(v) is not None for v in [possible_x, possible_y, possible_theta])
+                x_keys = ['px', 'x', 'posx']
+                y_keys = ['py', 'y', 'posy']
+                theta_keys = ['theta', 'angle', 'orientation']
+                
+                found_x = next((k for k in x_keys if k in pose), None)
+                found_y = next((k for k in y_keys if k in pose), None)
+                found_theta = next((k for k in theta_keys if k in pose), None)
+                
+                if found_x and found_y and found_theta:
+                    return all(isinstance(pose[k], (int, float)) for k in [found_x, found_y, found_theta])
             return False
 
         def convert_to_standard_pose(pose_data):
             """Convert various pose formats to standard format"""
             if isinstance(pose_data, dict):
-                # Find appropriate keys for coordinates
-                px = next((extract_numeric_value(v) for k, v in pose_data.items() if
-                           any(x in k.lower() for x in ['px', 'x', 'posx'])), None)
-                py = next((extract_numeric_value(v) for k, v in pose_data.items() if
-                           any(y in k.lower() for y in ['py', 'y', 'posy'])), None)
-                theta = next((extract_numeric_value(v) for k, v in pose_data.items() if
-                              any(t in k.lower() for t in ['theta', 'angle', 'orientation'])), None)
-
-                if all(v is not None for v in [px, py, theta]):
-                    return {'px': px, 'py': py, 'theta': theta}
+                # Try exact keys first
+                if all(key in pose_data for key in ['px', 'py', 'theta']):
+                    return {
+                        'px': float(pose_data['px']),
+                        'py': float(pose_data['py']),
+                        'theta': float(pose_data['theta'])
+                    }
+                
+                # Try alternative keys
+                x_keys = ['px', 'x', 'posx']
+                y_keys = ['py', 'y', 'posy']
+                theta_keys = ['theta', 'angle', 'orientation']
+                
+                found_x = next((k for k in x_keys if k in pose_data), None)
+                found_y = next((k for k in y_keys if k in pose_data), None)
+                found_theta = next((k for k in theta_keys if k in pose_data), None)
+                
+                if found_x and found_y and found_theta:
+                    try:
+                        return {
+                            'px': float(pose_data[found_x]),
+                            'py': float(pose_data[found_y]),
+                            'theta': float(pose_data[found_theta])
+                        }
+                    except (ValueError, TypeError):
+                        return None
 
             elif isinstance(pose_data, (list, tuple)) and len(pose_data) >= 3:
-                # Assume first three numbers are x, y, theta
-                values = [extract_numeric_value(v) for v in pose_data[:3]]
-                if all(v is not None for v in values):
-                    return {'px': values[0], 'py': values[1], 'theta': values[2]}
+                try:
+                    return {
+                        'px': float(pose_data[0]),
+                        'py': float(pose_data[1]),
+                        'theta': float(pose_data[2])
+                    }
+                except (ValueError, TypeError):
+                    return None
 
             return None
 
-        normalized_batches = []
-
         try:
+            normalized_poses = []
+            
             # Handle string input (JSON)
             if isinstance(raw_data, str):
                 try:
-                    raw_data = json.loads(raw_data)
+                    # Try parsing as a single JSON object or array
+                    data = json.loads(raw_data)
+                    if isinstance(data, list):
+                        raw_data = data
+                    else:
+                        raw_data = [data]
                 except json.JSONDecodeError:
-                    # Try to parse as space/comma-separated values
+                    # Try parsing line by line
                     lines = raw_data.strip().split('\n')
                     raw_data = []
                     for line in lines:
-                        values = line.strip().split(',') if ',' in line else line.strip().split()
-                        if len(values) >= 3:
-                            raw_data.append(values)
+                        try:
+                            line_data = json.loads(line.strip())
+                            raw_data.append(line_data)
+                        except json.JSONDecodeError:
+                            continue
 
-            # Handle different data structures
-            if isinstance(raw_data, dict):
-                # Extract any array-like values from the dictionary
-                pose_arrays = [v for v in raw_data.values() if isinstance(v, (list, tuple))]
-                if pose_arrays:
-                    raw_data = pose_arrays
-                else:
-                    raw_data = [raw_data]
+            # Ensure raw_data is a list
+            if not isinstance(raw_data, list):
+                raw_data = [raw_data]
 
-            if not isinstance(raw_data, (list, tuple)):
-                return []
-
-            # Handle flat array vs array of arrays
-            if not raw_data:
-                return []
-
-            # If it's a flat array of numbers, try to group them into poses
-            if all(isinstance(x, (int, float, str)) for x in raw_data):
-                poses = []
-                for i in range(0, len(raw_data), 3):
-                    if i + 2 < len(raw_data):
-                        pose = [raw_data[i], raw_data[i + 1], raw_data[i + 2]]
-                        normalized_pose = convert_to_standard_pose(pose)
-                        if normalized_pose:
-                            poses.append(normalized_pose)
-                if poses:
-                    normalized_batches.append(poses)
-            else:
-                # Handle nested structures
-                current_batch = []
-                for item in raw_data:
-                    if isinstance(item, (list, tuple)):
-                        # Array of arrays
-                        batch_poses = []
+            # Process each item
+            for item in raw_data:
+                if is_valid_pose(item):
+                    pose = convert_to_standard_pose(item)
+                    if pose:
+                        normalized_poses.append(pose)
+                elif isinstance(item, (list, tuple)):
+                    # Handle nested arrays
+                    if all(isinstance(x, (int, float)) for x in item[:3]):
+                        # Single pose as array
+                        pose = convert_to_standard_pose(item)
+                        if pose:
+                            normalized_poses.append(pose)
+                    else:
+                        # Array of poses
                         for pose_data in item:
-                            normalized_pose = convert_to_standard_pose(pose_data)
-                            if normalized_pose:
-                                batch_poses.append(normalized_pose)
-                        if batch_poses:
-                            normalized_batches.append(batch_poses)
-                    elif is_valid_pose(item):
-                        # Array of pose objects
-                        normalized_pose = convert_to_standard_pose(item)
-                        if normalized_pose:
-                            current_batch.append(normalized_pose)
+                            if is_valid_pose(pose_data):
+                                pose = convert_to_standard_pose(pose_data)
+                                if pose:
+                                    normalized_poses.append(pose)
 
-                if current_batch:
-                    normalized_batches.append(current_batch)
+            return [normalized_poses] if normalized_poses else []
 
         except Exception as e:
             logger.error(f"Error normalizing pose data: {e}")
             return []
-
-        return normalized_batches
 
     @app.route('/api/manual-input', methods=['POST'])
     def manual_input():
@@ -600,7 +595,12 @@ def register_routes(app, robot_registry, telemetry_buffer, risk_score_buffer, te
                 raw_data = content
             # Handle JSON data
             elif request.is_json:
-                raw_data = request.get_json()
+                try:
+                    # First try to parse as regular JSON
+                    raw_data = request.get_json()
+                except:
+                    # If that fails, treat it as line-by-line JSON
+                    raw_data = request.get_data().decode('utf-8')
             # Handle raw data
             else:
                 raw_data = request.get_data().decode('utf-8')
@@ -614,19 +614,30 @@ def register_routes(app, robot_registry, telemetry_buffer, risk_score_buffer, te
                 return handle_error("No valid pose data could be extracted from input", 400)
 
             results = []
+            analyzer = None
 
+            # Get or create analyzer for default robot
+            for a in analyzers:
+                if a.robot_id == "default":
+                    analyzer = a
+                    break
+
+            if not analyzer:
+                analyzer = RoboticTelemetryAnalyzer(
+                    robot_id="default",
+                    risk_score_buffer=risk_score_buffer
+                )
+                analyzers.append(analyzer)
+                analyzer.start()
+
+            # Process each pose
             for pose_batch in pose_batches:
-                # Process poses in groups of 3
-                for i in range(0, len(pose_batch), 3):
-                    pose_group = pose_batch[i:i + 3]
-                    if len(pose_group) < 3:
-                        continue
-
+                for pose in pose_batch:
                     # Create telemetry data with simulated sensor data
                     telemetry_data = {
                         'robot_id': "default",
                         'timestamp': datetime.now().isoformat(),
-                        'poses': pose_group,
+                        'poses': [pose],  # Single pose in array
                         'battery': {
                             'capacity': random.uniform(80, 100),
                             'is_charging': random.choice([True, False]),
@@ -641,19 +652,14 @@ def register_routes(app, robot_registry, telemetry_buffer, risk_score_buffer, te
                         }
                     }
 
-                    # Process with analyzer
-                    analyzer = next((a for a in analyzers if a.robot_id == "default"), None)
-                    if not analyzer:
-                        analyzer = RoboticTelemetryAnalyzer(
-                            robot_id="default",
-                            risk_score_buffer=risk_score_buffer
-                        )
-                        analyzers.append(analyzer)
-                        analyzer.start()
-
-                    result = analyzer.analyze_manual_data(telemetry_data)
-                    if result:
-                        results.append(result)
+                    try:
+                        # Process with analyzer
+                        result = analyzer.analyze_manual_data(telemetry_data)
+                        if result:
+                            results.append(result)
+                    except Exception as e:
+                        logger.error(f"Error processing pose data: {e}")
+                        continue
 
             if results:
                 response_data = {
