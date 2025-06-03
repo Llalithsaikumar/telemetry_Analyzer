@@ -4,7 +4,9 @@
 ![GitHub stars](https://img.shields.io/github/stars/Llalithsaikumar/telemetry_Analyzer?style=social)
 ![GitHub followers](https://img.shields.io/github/followers/Llalithsaikumar?style=social)
 
-A robust tool for analyzing telemetry data, leveraging machine learning to identify patterns, anomalies, and insights.
+A robust tool for analyzing **telemetry data**, leveraging machine learning to identify patterns, anomalies, and critical insights within various system metrics.
+
+---
 
 ## Table of Contents
 - [About the Project](#about-the-project)
@@ -20,59 +22,77 @@ A robust tool for analyzing telemetry data, leveraging machine learning to ident
 - [Contact](#contact)
 - [Acknowledgements](#acknowledgements)
 
+---
+
 ## About the Project
 
-This repository contains the code for the Telemetry Analyzer, a project designed to [**Describe the main goal of the project in 1-2 sentences. E.g., "process and analyze complex telemetry streams from IoT devices," or "monitor system health and detect potential failures early."**]. It utilizes machine learning techniques to automate the identification of [**mention what it identifies, e.g., "anomalous behavior," "performance bottlenecks," "resource utilization trends," etc.**], thereby providing valuable insights into the performance and stability of the monitored systems.
+This repository contains the code for the **Telemetry Analyzer**, a project designed to **automatically process and analyze high-volume telemetry streams from various sources like IoT devices, servers, or network infrastructure**. It utilizes advanced machine learning techniques to automate the identification of **anomalous behavior, performance bottlenecks, and resource utilization trends**, thereby providing valuable insights into the operational health and stability of monitored systems.
 
-The core problem this project aims to solve is [**Explain the specific problem this project addresses. For example, "the manual and time-consuming process of sifting through vast amounts of telemetry data," or "the difficulty in proactively identifying issues before they impact users."**].
+The core problem this project aims to solve is the **overwhelming challenge of manually sifting through vast amounts of telemetry data to identify critical events or deviations from normal operation**. By automating this process, the Telemetry Analyzer helps reduce downtime, improve system reliability, and enable proactive problem-solving.
+
+---
 
 ## Features
 
-* **[Feature 1]:** [Brief description of Feature 1. E.g., "Automated data ingestion from various telemetry sources."]
-* **[Feature 2]:** [Brief description of Feature 2. E.g., "Real-time anomaly detection using a trained ML model."]
-* **[Feature 3]:** [Brief description of Feature 3. E.g., "Visualization of telemetry trends and detected anomalies."]
-* **[Feature 4]:** [Brief description of Feature 4. E.g., "Configurable alerting mechanisms for critical events."]
-* **[Feature 5]:** [Brief description of Feature 5. E.g., "Scalable architecture for handling large datasets."]
+* **Automated Data Ingestion:** Seamlessly ingest telemetry data from various formats like CSV, JSON, or direct streams.
+* **Real-time Anomaly Detection:** Apply a trained machine learning model to detect anomalies in incoming telemetry data as it arrives.
+* **Comprehensive Feature Engineering:** Automatically derive meaningful features from raw telemetry to enhance model performance.
+* **Intuitive Data Visualization:** Generate interactive plots and dashboards to visualize telemetry trends and highlight detected anomalies.
+* **Configurable Alerting System:** Set up alerts for critical anomalies, integrating with common notification services (e.g., Slack, email).
+* **Scalable Architecture:** Designed to handle large volumes of telemetry data efficiently.
+
+---
 
 ## How the ML Model Works
 
-The machine learning model at the heart of this Telemetry Analyzer is responsible for [**Explain the ML model's role. E.g., "identifying deviations from normal operating patterns," or "classifying telemetry events into different categories."**].
+The machine learning model at the heart of this Telemetry Analyzer is responsible for **identifying deviations from normal operating patterns within continuous telemetry streams**. It is primarily focused on **unsupervised anomaly detection**.
 
 ### Model Type
 
-The model used is a [**State the type of ML model, e.g., "Isolation Forest," "Autoencoder," "LSTM," "XGBoost Classifier," "K-Means Clustering," etc.**].
+The primary model used for anomaly detection in this project is an **Isolation Forest**. This algorithm is particularly effective for high-dimensional datasets and works by isolating anomalies rather than profiling normal data.
 
 ### Training Data
 
-The model is trained on [**Describe the type of data used for training. E.g., "historical telemetry data representing normal system behavior," "labeled datasets of healthy and anomalous telemetry," etc.**]. The training dataset includes features such as [**List some key features/columns from your training data, e.g., "CPU usage," "memory consumption," "network latency," "error rates," "timestamp," etc.**].
+The model is trained on **historical telemetry data representing known "normal" system behavior**. It's crucial that this training dataset is clean and representative of the system's healthy state, ideally without significant anomalies. The training dataset typically includes features such as:
+
+* `timestamp`: The time of the telemetry reading.
+* `cpu_usage_percent`: Percentage of CPU utilized.
+* `memory_free_mb`: Free memory in megabytes.
+* `disk_io_rate_mbps`: Disk I/O rate in MB/s.
+* `network_latency_ms`: Network latency in milliseconds.
+* `error_count`: Number of errors reported.
 
 ### Feature Engineering
 
-Before feeding data to the model, the following feature engineering steps are performed:
-* [**Describe Feature Engineering Step 1. E.g., "Time-series decomposition to extract trend, seasonality, and residual components."**]
-* [**Describe Feature Engineering Step 2. E.g., "Normalization/Standardization of numerical features."**]
-* [**Describe Feature Engineering Step 3. E.g., "Creation of rolling averages or other statistical features."**]
-* [**Describe Feature Engineering Step 4 (if applicable). E.g., "Categorical encoding (One-Hot Encoding, Label Encoding)."**]
+Before feeding data to the Isolation Forest model, the following feature engineering steps are performed to enhance its ability to detect subtle anomalies:
+
+1.  **Timestamp Conversion:** Convert raw timestamps into numerical features like epoch time or relative time from start.
+2.  **Lagged Features:** Create features representing the value of a metric from previous time steps (e.g., `cpu_usage_percent_lag1`).
+3.  **Rolling Statistics:** Calculate rolling averages, standard deviations, min, and max values over a defined window (e.g., 5-minute rolling average of `cpu_usage_percent`).
+4.  **Difference Features:** Compute the difference between current and previous values to capture rate of change.
+5.  **Normalization/Standardization:** Scale numerical features to a common range (e.g., using `StandardScaler`) to prevent features with larger magnitudes from dominating the model.
 
 ### Model Architecture and Training Process
 
-[**Provide details about the model's architecture (if applicable, especially for neural networks).**]
-* **For Supervised Learning:**
-    * The training process involves [**Explain the training objective and algorithm. E.g., "minimizing the reconstruction error for autoencoders," or "classifying data points as 'normal' or 'anomaly' using a supervised learning algorithm."**].
-    * The model learns to [**What does the model learn? E.g., "learn the underlying distribution of normal telemetry data," or "distinguish between normal and anomalous patterns based on labeled examples."**].
-    * [**Mention any specific training parameters, e.g., "epochs," "batch size," "optimizer," "loss function."**]
-* **For Unsupervised Learning (Anomaly Detection):**
-    * The model is trained on data assumed to be [**E.g., "mostly normal/healthy."**]
-    * It learns to [**What does the model learn to do? E.g., "identify outliers that deviate significantly from the learned normal patterns," or "cluster similar data points and flag those far from any cluster centroid."**].
-    * [**Mention how anomalies are scored/detected. E.g., "An anomaly score is calculated for each data point, and a threshold is applied to classify anomalies."**]
+The **Isolation Forest** model does not require explicit "training" in the traditional supervised learning sense with labeled anomalies. Instead, it builds an ensemble of isolation trees. Each tree is built by recursively partitioning the dataset based on random feature selections and random split points. Anomalies, being "few and different," are typically isolated closer to the root of these trees with fewer splits, while normal points require more splits to be isolated.
+
+The training process involves:
+
+* **Dataset Sampling:** Training on a representative sample of normal telemetry data.
+* **Tree Construction:** Building a specified number of isolation trees (`n_estimators`, e.g., 100 or 200).
+* **Contamination Parameter:** A `contamination` parameter is set (e.g., 0.01 for 1% expected anomalies) which helps in setting the threshold for anomaly scores.
 
 ### Anomaly Detection/Prediction Logic
 
-Once trained, the model operates as follows:
-1.  **Data Ingestion:** New telemetry data points are [**How are they ingested? E.g., "streamed into the system," "loaded from a file."**].
-2.  **Preprocessing:** The same feature engineering steps applied during training are applied to the new data.
-3.  **Prediction/Scoring:** The preprocessed data is fed into the trained ML model, which outputs [**What does it output? E.g., "an anomaly score," "a classification (normal/anomaly)," "a reconstruction error."**].
-4.  **Thresholding/Interpretation:** [**Explain how the model's output is interpreted to declare an anomaly. E.g., "If the anomaly score exceeds a predefined threshold, the data point is flagged as anomalous."**]
+Once the Isolation Forest model is "trained" on normal data, it operates as follows for new incoming telemetry:
+
+1.  **Data Ingestion:** New telemetry data points are ingested, typically in a streaming fashion or from batch files.
+2.  **Preprocessing:** The same feature engineering steps (timestamp conversion, lagged features, rolling statistics, normalization) applied during training are rigorously applied to the new data.
+3.  **Anomaly Scoring:** The preprocessed new data is fed into the trained Isolation Forest model. The model computes an **anomaly score** for each data point. This score reflects how "isolated" a data point is; lower scores indicate a higher likelihood of being an anomaly.
+4.  **Thresholding and Classification:** Based on the `contamination` parameter set during training (or a manually defined threshold), a decision boundary is determined. If the anomaly score for a data point falls below this threshold, it is classified and flagged as an **anomaly**.
+5.  **Reporting and Alerting:** Detected anomalies are logged, reported, and can trigger alerts via integrated notification systems.
+
+---
 
 ## Getting Started
 
@@ -82,9 +102,9 @@ To get a copy of the project up and running on your local machine for developmen
 
 Before you begin, ensure you have the following installed:
 
-* [**Python version, e.g., Python 3.8+**]
-* [**List any other major dependencies, e.g., pip, Git**]
-* [**Any OS-specific prerequisites, if applicable.**]
+* **Python 3.9+**: It's highly recommended to use a modern Python version.
+* **pip**: Python package installer, usually comes with Python.
+* **Git**: For cloning the repository.
 
 ### Installation
 
@@ -94,7 +114,8 @@ Before you begin, ensure you have the following installed:
     cd telemetry_Analyzer
     ```
 
-2.  **Create and activate a virtual environment (recommended):**
+2.  **Create and activate a virtual environment (highly recommended):**
+    A virtual environment isolates your project's dependencies from your system's Python packages.
     ```bash
     python -m venv venv
     # On Windows:
@@ -104,19 +125,20 @@ Before you begin, ensure you have the following installed:
     ```
 
 3.  **Install the required dependencies:**
+    This project relies on a `requirements.txt` file for its dependencies.
     ```bash
     pip install -r requirements.txt
     ```
-    * **Note:** If `requirements.txt` is not present, you'll need to create it by running `pip freeze > requirements.txt` after installing your dependencies manually, or just list the key dependencies here for the user to install directly.
+
+---
 
 ## Usage
 
 This section details how to run and interact with the Telemetry Analyzer.
 
-### [Option 1: Command Line Interface (CLI)]
+### Running the Anomaly Detector
 
-[**If your project is runnable via CLI, provide specific commands and explanations.**]
+The main entry point for running the telemetry analysis and anomaly detection is `main.py`. You'll typically provide an input telemetry data file and an output directory for results.
 
-To analyze a telemetry file:
 ```bash
-python main.py --input_file [path_to_telemetry_data.csv] --output_dir [path_for_results]
+python main.py --input_file data/raw/sample_telemetry_data.csv --output_dir results/anomaly_reports
